@@ -6,7 +6,7 @@ from google.auth.transport.requests import AuthorizedSession
 import openpyxl
 
 # Configuration: set these via environment variables or update the values.
-SERVICE_ACCOUNT_FILE = os.getenv("GA_SERVICE_ACCOUNT_JSON"")
+SERVICE_ACCOUNT_FILE = os.getenv("GA_SERVICE_ACCOUNT_JSON")
 PROPERTY_ID = os.getenv("GA_PROPERTY_ID")
 SCOPES = ["https://www.googleapis.com/auth/analytics.readonly"]
 
