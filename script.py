@@ -5,19 +5,28 @@ from google.oauth2 import service_account
 from google.auth.transport.requests import AuthorizedSession
 import openpyxl
 
-# Configuration: set these via environment variables or update the values.
-SERVICE_ACCOUNT_FILE = "service_account.json"
-PROPERTY_ID = os.environ.get("GA_PROPERTY_ID")
+# Scopes for Google Analytics API
 SCOPES = ["https://www.googleapis.com/auth/analytics.readonly"]
+
+# Load service account JSON directly from the environment variable.
+service_account_info = json.loads(os.environ.get("GA_SERVICE_ACCOUNT_JSON"))
+credentials = service_account.Credentials.from_service_account_info(
+    service_account_info, scopes=SCOPES
+)
+
+# Retrieve GA property ID from environment variable.
+PROPERTY_ID = os.environ.get("GA_PROPERTY_ID")
+if not PROPERTY_ID:
+    raise ValueError("GA_PROPERTY_ID environment variable not set.")
 
 def compute_last_week_date_range():
     """
     Compute last week’s Monday and Sunday.
     In JavaScript, Sunday=0, but in Python, Monday=0 and Sunday=6.
     If today is Sunday (weekday() == 6), then:
-      lastSunday = today - 7 days and lastMonday = today - 13 days.
+      last_sunday = today - 7 days and last_monday = today - 13 days.
     Otherwise:
-      lastSunday = today - (weekday() + 1) days and lastMonday = lastSunday - 6 days.
+      last_sunday = today - (weekday() + 1) days and last_monday = last_sunday - 6 days.
     """
     today = datetime.date.today()
     if today.weekday() == 6:  # Sunday in Python
@@ -64,7 +73,7 @@ def main():
     start_date, end_date = compute_last_week_date_range()
     print(f"Date range: {start_date} to {end_date}")
 
-    # Construct payload with dimensions, metrics, and filters as desired.
+    # Construct payload with dimensions, metrics, and filters.
     payload = {
         "dateRanges": [
             {"startDate": start_date, "endDate": end_date}
@@ -79,7 +88,6 @@ def main():
         "dimensionFilter": {
             "andGroup": {
                 "expressions": [
-                    # Filter: pageLocation must contain the query string.
                     {
                         "filter": {
                             "fieldName": "pageLocation",
@@ -89,7 +97,6 @@ def main():
                             }
                         }
                     },
-                    # Filter: pageLocation must contain 'en-us'
                     {
                         "filter": {
                             "fieldName": "pageLocation",
@@ -99,7 +106,6 @@ def main():
                             }
                         }
                     },
-                    # Filter: eventName equals "complete_sub"
                     {
                         "filter": {
                             "fieldName": "eventName",
@@ -109,7 +115,6 @@ def main():
                             }
                         }
                     },
-                    # Exclude rows with specific customEvent:issue_category values.
                     {
                         "notExpression": {
                             "orGroup": {
@@ -140,10 +145,6 @@ def main():
             }
         }
     }
-
-    # Authenticate with GA using the service account.
-    credentials = service_account.Credentials.from_service_account_file(
-        SERVICE_ACCOUNT_FILE, scopes=SCOPES)
 
     # Retrieve report.
     report = get_ga4_report(payload, credentials)
